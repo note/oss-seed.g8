@@ -10,25 +10,31 @@ object Names {
 
 @main
 def createKeyAndGenerateTravis(githubToken: String): Unit = {
-    val pgpKeyId = createPgpKey()
+    Gpg.generateKey() match {
+        case Some(key) => generateTravis(githubToken, key)
+        case None => sys.error("Could not parse output of Gpg.generateKey")
+    }
+}
 
-    generateTravis(githubToken, pgpKeyId)
+@main
+def test(): Unit = {
+    generateTravis("whatever", "C52A082D842833754A4C6916995E15952480DD49")
 }
 
 @main
 def generateTravis(githubToken: String, pgpKeyId: String): Unit = {
-    publish(pgpKeyIds) // Publishing is idempotent so we do that even for existing key
-    exportPublicKey(pgpKeyId, Names.publicKey)
-    exportPrivateKey(pgpKeyId, Names.privateKey)
+    Gpg.publish(pgpKeyId) // Publishing is idempotent so we do that even for existing key
+    Gpg.exportPublicKey(pgpKeyId, Names.publicKey)
+    Gpg.exportPrivateKey(pgpKeyId, Names.privateKey)
 
     CredentialsFile.create()
     
     os.proc("tar", "cvf", Names.secrets, Names.privateKey, Names.publicKey, Names.credentials).call()
     // Travis.login(githubToken)
-    // val travisEnvVarName = Travis.encryptFile(Names.secrets)
+    // val encryptLineInBash = Travis.encryptFile(Names.secrets)
     // Names.deleteTmpFiles()
 
-    // DecryptFile.create(travisEnvVarName)
+    // DecryptFile.create(encryptLineInBash)
 }
 
 object Gpg {
@@ -40,25 +46,22 @@ object Gpg {
         "hkps://pgp.mit.edu"
     )
 
-    def createAndPublish(): Option[String] = 
-        generateKey().map(id => publish(id))
-
     def generateKey(): Option[String] = {
         val out = os.proc(gpg, "--gen-key").call().out.lines
         out.find(l => l.contains("pub") && l.contains("rsa") && l.contains("expires"))
     }
 
-    def publish(keyId: String) = 
+    def publish(keyId: String): Unit = 
         keyservers.map(ks => publish(keyId, ks))
 
-    def publish(keyId: String, keyServer: String) =
-        os.proc(gpg, "--keyserver", keyServer, "--send-keys", keyId)
+    def publish(keyId: String, keyServer: String): Unit =
+        os.proc(gpg, "--keyserver", keyServer, "--send-keys", keyId).call()
 
     def exportPublicKey(keyId: String, outputFileName: String) =
-        os.proc(gpg, "--output", outputFileName, "--armor", "--export", keyId)
+        os.proc(gpg, "--output", outputFileName, "--armor", "--export", keyId).call()
 
     def exportPrivateKey(keyId: String, outputFileName: String) =
-        os.proc(gpg, "--output", outputFileName, "--armor", "--export-secret-key", keyId)
+        os.proc(gpg, "--output", outputFileName, "--armor", "--export-secret-key", keyId).call()
     
 }
 
@@ -66,21 +69,32 @@ object Travis {
     def login(githubToken: String) = 
         os.proc("travis", "login", "--pro", "--github-token", githubToken).call()
 
-    // parse travis env var name
     def encryptFile(filename: String): String = 
-        os.proc("travis", "encrypt-file", "--pro", filename)
+        os.proc("travis", "encrypt-file", "--pro", filename).call().out.lines.find(_.contains("openssl")).map(_.trim) match {
+            case Some(l) => l
+            case None => throw new RuntimeException("Could not parse output of travis encrypt-file")
+        }
 }
 
 object CredentialsFile {
+    // def template(sonatypePassword: String, pgpPassphrase: String): String = s"""
+    // |credentials += Credentials("Sonatype Nexus Repository Manager",
+    // |  "oss.sonatype.org",
+    // |  "$sonatype_username$",
+    // |  "$sonatypePassword")
+    // |
+    // |pgpPassphrase := Some("$pgpPassphrase").map(_.toArray)
+    // """.stripMargin
+    
     def template(sonatypePassword: String, pgpPassphrase: String): String = s"""
     |credentials += Credentials("Sonatype Nexus Repository Manager",
     |  "oss.sonatype.org",
-    |  "$sonatype_username$",
+    |  "TODO",
     |  "$sonatypePassword")
     |
     |pgpPassphrase := Some("$pgpPassphrase").map(_.toArray)
     """.stripMargin
-    
+
     def create() = {
         println("Sonatype password: ")
         val sonatypePassword = Console.readPassword()
@@ -88,7 +102,7 @@ object CredentialsFile {
         val pgpPassphrase = Console.readPassword()
 
         val str = template(sonatypePassword, pgpPassphrase)
-        os.write(os.pwd / Names.credentials)
+        os.write.over(os.pwd / Names.credentials, str)
     }
 }
 
@@ -97,11 +111,11 @@ object Console {
 }
 
 object DecryptFile {
-    def template(travisEnvVarName: String) = 
+    def template(encryptLineInBash: String) = 
         s"""#!/usr/bin/env bash
             |
-            |if [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
-            |  openssl aes-256-cbc -K $travisEnvVarName -iv $travisEnvVarName -in ${Names.secretsEncoded} -out ${Names.secrets} -d
+            |if [[ "$$TRAVIS_PULL_REQUEST" == "false" ]]; then
+            |  $encryptLineInBash
             |  tar xvf ${Names.secrets}
             |fi
         """.stripMargin
@@ -109,7 +123,7 @@ object DecryptFile {
     def create(travisEnvVarName: String) = {
         val scriptsDir = os.pwd / "scripts"
         os.makeDir(scriptsDir)
-        os.write(scriptsDir / Names.secretsEncoded, template(travisEnvVarName))
+        os.write.over(scriptsDir / Names.secretsEncoded, template(travisEnvVarName))
     }
         
 
