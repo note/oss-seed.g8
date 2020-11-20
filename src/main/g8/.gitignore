@@ -4,3 +4,9 @@ target
 *.bloop
 *.metals
 .bsp
+
+secrets.tar
+credentials.sbt
+secring.asc
+pubring.asc
+credentials.sbt.tmp
