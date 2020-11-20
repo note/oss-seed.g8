@@ -4,7 +4,7 @@ object Names {
     val publicKey = "pubring.asc"
     val credentials = "credentials.sbt"
     val tmpFiles = List(secrets, privateKey, publicKey, credentials)
-    val secretsEncoded = "secrets.tar.enc"
+    val decryptFile = "decrypt_files_if_not_pr.sh"
     def deleteTmpFiles() = tmpFiles.map(f => os.pwd / f).foreach(f => os.remove(f))
 }
 
@@ -19,6 +19,7 @@ def createKeyAndGenerateTravis(githubToken: String): Unit = {
 @main
 def test(): Unit = {
     generateTravis("whatever", "C52A082D842833754A4C6916995E15952480DD49")
+    DecryptFile.create("something")
 }
 
 @main
@@ -70,8 +71,8 @@ object Travis {
         os.proc("travis", "login", "--pro", "--github-token", githubToken).call()
 
     def encryptFile(filename: String): String = 
-        os.proc("travis", "encrypt-file", "--pro", filename).call().out.lines.find(_.contains("openssl")).map(_.trim) match {
-            case Some(l) => l
+        os.proc("travis", "encrypt-file", "--pro", filename).call().out.lines.find(_.contains("openssl")) match {
+            case Some(l) => l.trim
             case None => throw new RuntimeException("Could not parse output of travis encrypt-file")
         }
 }
@@ -118,12 +119,13 @@ object DecryptFile {
             |  $encryptLineInBash
             |  tar xvf ${Names.secrets}
             |fi
-        """.stripMargin
+            |""".stripMargin
 
     def create(travisEnvVarName: String) = {
         val scriptsDir = os.pwd / "scripts"
-        os.makeDir(scriptsDir)
-        os.write.over(scriptsDir / Names.secretsEncoded, template(travisEnvVarName))
+        os.makeDir.all(scriptsDir)
+        os.write.over(scriptsDir / Names.decryptFile, template(travisEnvVarName))
+        os.proc("chmod", "u+x", scriptsDir / Names.decryptFile).call()
     }
         
 
