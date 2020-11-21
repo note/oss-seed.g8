@@ -12,10 +12,28 @@ object Common {
 
       scalaVersion := "2.13.3",
       scalafmtOnCompile := true,
+      releasePublishArtifactsAction := PgpKeys.publishSigned.value,
 
       commonSmlBuildSettings,
       scalacOptions += "-Ymacro-annotations",
-      testFrameworks += new TestFramework("munit.Framework")
+      testFrameworks += new TestFramework("munit.Framework"),
+      ossPublishSettings ++ Seq(
+        sonatypeProfileName := "$organization$",
+        organizationHomepage := Some(url("$organizationHomepage$")),
+        homepage := Some(url("$projectHomepage$")),
+        sonatypeProjectHosting := Some(
+          GitHubHosting("$githubLogin$", name.value, "$githubEmail$")
+        ),
+        licenses := Seq("$licenseName$" -> url("$licenseUrl$")),
+        developers := List(
+          Developer(
+            id = "$githubLogin$",
+            name = "$developerName$",
+            email = "$githubEmail$",
+            url = new URL("$githubDeveloperUrl$")
+          )
+        )
+      )
     )
   }
 }
