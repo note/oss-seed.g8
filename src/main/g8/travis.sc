@@ -17,12 +17,6 @@ def createKeyAndGenerateTravis(githubToken: String): Unit = {
 }
 
 @main
-def test(): Unit = {
-    generateTravis("whatever", "C52A082D842833754A4C6916995E15952480DD49")
-    DecryptFile.create("something")
-}
-
-@main
 def generateTravis(githubToken: String, pgpKeyId: String): Unit = {
     Gpg.publish(pgpKeyId) // Publishing is idempotent so we do that even for existing key
     Gpg.exportPublicKey(pgpKeyId, Names.publicKey)
@@ -78,15 +72,6 @@ object Travis {
 }
 
 object CredentialsFile {
-    // def template(sonatypePassword: String, pgpPassphrase: String): String = s"""
-    // |credentials += Credentials("Sonatype Nexus Repository Manager",
-    // |  "oss.sonatype.org",
-    // |  "$sonatype_username$",
-    // |  "$sonatypePassword")
-    // |
-    // |pgpPassphrase := Some("$pgpPassphrase").map(_.toArray)
-    // """.stripMargin
-    
     def template(sonatypePassword: String, pgpPassphrase: String): String = s"""
     |credentials += Credentials("Sonatype Nexus Repository Manager",
     |  "oss.sonatype.org",

@@ -2,3 +2,5 @@ target
 .metals
 .vscode
 .bsp
+.ammonite
+src/main/g8/scripts
