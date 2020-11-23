@@ -1,3 +1,4 @@
+import java.util.jar.Attributes.Name
 object Names {
     val secrets = "secrets.tar"
     val privateKey = "secring.asc"
@@ -25,11 +26,11 @@ def generateTravis(githubToken: String, pgpKeyId: String): Unit = {
     CredentialsFile.create()
     
     os.proc("tar", "cvf", Names.secrets, Names.privateKey, Names.publicKey, Names.credentials).call()
-    // Travis.login(githubToken)
-    // val encryptLineInBash = Travis.encryptFile(Names.secrets)
-    // Names.deleteTmpFiles()
+    Travis.login(githubToken)
+    val encryptLineInBash = Travis.encryptFile(Names.secrets)
+    Names.deleteTmpFiles()
 
-    // DecryptFile.create(encryptLineInBash)
+    DecryptFile.create(encryptLineInBash)
 }
 
 object Gpg {
@@ -112,7 +113,4 @@ object DecryptFile {
         os.write.over(scriptsDir / Names.decryptFile, template(travisEnvVarName))
         os.proc("chmod", "u+x", scriptsDir / Names.decryptFile).call()
     }
-        
-
 }
-
