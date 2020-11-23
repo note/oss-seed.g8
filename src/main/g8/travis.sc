@@ -7,7 +7,7 @@ object Names {
     val tmpFiles = List(secrets, privateKey, publicKey, credentials)
     val decryptFile = "decrypt_files_if_not_pr.sh"
     def deleteTmpFiles() = tmpFiles.map(f => os.pwd / f).foreach(f => os.remove(f))
-    val secretsEncrypted = s"$secrets.enc"
+    val secretsEncrypted = s"\$secrets.enc"
 }
 
 @main
@@ -102,7 +102,7 @@ object Console {
 object DecryptFile {
     def create(bashCode: String) = {
         val scriptsDir = os.pwd / "scripts"
-        val template = os.read(scriptsDir / s"${Names.decryptFile}.template")
+        val template = os.read(scriptsDir / s"\${Names.decryptFile}.template")
         val replaced = template.replace("%encryptLine%", bashCode).replace("%encryptedFile%", Names.secretsEncrypted)
         os.write(scriptsDir / Names.decryptFile, replaced)
         os.proc("chmod", "u+x", scriptsDir / Names.decryptFile).call()
