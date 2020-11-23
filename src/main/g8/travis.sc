@@ -73,13 +73,14 @@ object Travis {
 }
 
 object CredentialsFile {
+    // see more about giter8 and string interpolation issue: https://github.com/foundweekends/giter8/issues/333
     def template(sonatypePassword: String, pgpPassphrase: String): String = s"""
     |credentials += Credentials("Sonatype Nexus Repository Manager",
     |  "oss.sonatype.org",
     |  "TODO",
-    |  "$sonatypePassword")
+    |  "\$sonatypePassword")
     |
-    |pgpPassphrase := Some("$pgpPassphrase").map(_.toArray)
+    |pgpPassphrase := Some("\$pgpPassphrase").map(_.toArray)
     """.stripMargin
 
     def create() = {
