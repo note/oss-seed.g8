@@ -78,12 +78,12 @@ object CredentialsFile {
     def template(sonatypePassword: String, pgpPassphrase: String): String = s"""
     |credentials += Credentials("Sonatype Nexus Repository Manager",
     |  "oss.sonatype.org",
-    |  "TODO",
+    |  "$sonatypeUserName$",
     |  "\$sonatypePassword")
     |
     |pgpPassphrase := Some("\$pgpPassphrase").map(_.toArray)
     """.stripMargin
-
+s
     def create() = {
         println("Sonatype password: ")
         val sonatypePassword = Console.readPassword()
