@@ -83,7 +83,7 @@ object CredentialsFile {
     |
     |pgpPassphrase := Some("\$pgpPassphrase").map(_.toArray)
     """.stripMargin
-s
+
     def create() = {
         println("Sonatype password: ")
         val sonatypePassword = Console.readPassword()
