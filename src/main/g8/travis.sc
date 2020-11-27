@@ -27,7 +27,9 @@ def generateTravis(githubToken: String, pgpKeyId: String): Unit = {
     CredentialsFile.create()
     
     os.proc("tar", "cvf", Names.secrets, Names.privateKey, Names.publicKey, Names.credentials).call()
+    println("Logging into travis")
     Travis.login(githubToken)
+    println("Encrypting secrets")
     val encryptLineInBash = Travis.encryptFile(Names.secrets)
     Names.deleteTmpFiles()
 
@@ -90,6 +92,7 @@ object CredentialsFile {
         println("PGP passphrase: ")
         val pgpPassphrase = Console.readPassword()
 
+        println("Continuing...")
         val str = template(sonatypePassword, pgpPassphrase)
         os.write.over(os.pwd / Names.credentials, str)
     }
@@ -106,5 +109,6 @@ object DecryptFile {
         val replaced = template.replace("%encryptLine%", bashCode).replace("%encryptedFile%", Names.secretsEncrypted)
         os.write(scriptsDir / Names.decryptFile, replaced)
         os.proc("chmod", "u+x", scriptsDir / Names.decryptFile).call()
+        os.remove(scriptsDir / s"\${Names.decryptFile}.template")
     }
 }
