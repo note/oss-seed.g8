@@ -30,8 +30,12 @@ WARNING: Never commit any of those files `secrets.tar`, `credentials.sbt`, `secr
 Now, after generating the project, you can focus on writing your library for some time. When the moment of the first release comes, you will need to:
 
 ```
-TODO
+sbt commitRelease
 ```
+
+It runs in interactive mode in which you can specify the version you are about to publish and the next version. The current version will be pushed to Github as tag which in result will be picked up by Travis. Then Travis runs `sbt publishRelease`.
+
+Read more in sbt-softwaremill [docs](https://github.com/softwaremill/sbt-softwaremill#releasing-your-library-using-travis).
 
 ## Debugging
 

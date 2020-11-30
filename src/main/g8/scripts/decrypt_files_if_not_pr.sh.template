@@ -2,5 +2,5 @@
 
 if [[ "$$TRAVIS_PULL_REQUEST" == "false" ]]; then
   %encryptLine%
-  tar xvf %encryptedFile%
+  tar xvf %decryptedFile%
 fi
